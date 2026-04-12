@@ -23,4 +23,8 @@ describe('config', () => {
   it('privateKeyPath is inside configDir', () => {
     expect(buildDefaultConfig('/tmp/c').connection.privateKeyPath).toBe('/tmp/c/id_ed25519');
   });
+
+  it('sets localEngine to tesseract', () => {
+    expect(buildDefaultConfig('/tmp/c').ocr.localEngine).toBe('tesseract');
+  });
 });
