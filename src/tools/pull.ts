@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, mkdir } from 'fs/promises';
+import { mkdtemp, readFile, rm, mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import type { CallToolResult, Tool } from '@modelcontextprotocol/sdk/types.js';
@@ -78,7 +78,7 @@ export async function handlePull(args: Record<string, unknown>): Promise<CallToo
         try {
           const thumb = await downloadThumbnail(targetId);
           const thumbPath = join(tempDir, 'thumbnail.png');
-          await (await import('fs/promises')).writeFile(thumbPath, thumb);
+          await writeFile(thumbPath, thumb);
           thumbDir = tempDir;
         } catch {
           return { isError: true, content: [{ type: 'text', text: `Failed to download "${targetName}": ${(err as Error).message}` }] };
