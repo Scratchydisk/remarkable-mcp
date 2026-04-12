@@ -64,6 +64,7 @@ export async function sshPipeTar(opts: SSHOptions, remoteCmd: string, localDir: 
     const tarProc = spawn('tar', ['xf', '-', '-C', localDir], { stdio: ['pipe', 'inherit', 'pipe'] });
     let tarError = '';
     tarProc.stderr?.on('data', (d: Buffer) => { tarError += d.toString(); });
+    const timer = setTimeout(() => { conn.destroy(); tarProc.kill(); reject(new Error('sshPipeTar timed out')); }, 120000);
 
     conn.on('ready', () => {
       conn.exec(remoteCmd, (err, stream) => {
@@ -76,6 +77,7 @@ export async function sshPipeTar(opts: SSHOptions, remoteCmd: string, localDir: 
     });
     conn.on('error', (err: Error) => { tarProc.kill(); reject(err); });
     tarProc.on('close', (code: number | null) => {
+      clearTimeout(timer);
       if (code === 0) resolve();
       else reject(new Error(`tar exited ${code}: ${tarError.trim()}`));
     });
@@ -114,6 +116,7 @@ export async function enableUsbWebInterface(opts: SSHOptions): Promise<'already-
     );
     const status = out.trim();
     if (status === 'already-enabled') return 'already-enabled';
+    if (status === 'failed') return 'failed';
     // Give xochitl 3 seconds to restart before HTTP probe
     await new Promise((r) => setTimeout(r, 3000));
     return 'enabled';
