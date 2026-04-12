@@ -1,0 +1,31 @@
+{
+  "name": "remarkable-mcr",
+  "version": "0.1.0",
+  "description": "MCP server for reMarkable 2 — pull handwritten notes into any AI agent",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "remarkable-mcr": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@resvg/resvg-js": "^2.0.0",
+    "adm-zip": "^0.5.16",
+    "remarkable-rm": "file:../remarkable-rm",
+    "ssh2": "^1.17.0"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
+    "@types/node": "^22.0.0",
+    "@types/ssh2": "^1.15.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^4.0.0"
+  }
+}
