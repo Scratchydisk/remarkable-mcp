@@ -27,4 +27,8 @@ describe('render', () => {
   it('handles cPages entries without id', () => {
     expect(selectPageIds({ cPages: { pages: [{ id: 'aaa' }, {}] } })).toEqual(['aaa', '']);
   });
+
+  it('handles cPages string entries', () => {
+    expect(selectPageIds({ cPages: { pages: ['xxx', { id: 'yyy' }] } })).toEqual(['xxx', 'yyy']);
+  });
 });
