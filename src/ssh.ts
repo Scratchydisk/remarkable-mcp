@@ -42,7 +42,6 @@ export async function sshExec(opts: SSHOptions, command: string, timeoutMs = 300
         let stdout = '';
         let stderr = '';
         stream.on('data', (d: Buffer) => { stdout += d.toString(); });
-        // @ts-expect-error ssh2 types declare stderr but TypeScript may not resolve it cleanly
         stream.stderr.on('data', (d: Buffer) => { stderr += d.toString(); });
         stream.on('close', (code: number) => {
           clearTimeout(timer);
@@ -71,7 +70,6 @@ export async function sshPipeTar(opts: SSHOptions, remoteCmd: string, localDir: 
         if (err) { conn.end(); reject(err); return; }
         stream.pipe(tarProc.stdin);
         stream.on('close', () => { conn.end(); tarProc.stdin.end(); });
-        // @ts-expect-error ssh2 types declare stderr but TypeScript may not resolve it cleanly
         stream.stderr.on('data', () => {});
       });
     });
