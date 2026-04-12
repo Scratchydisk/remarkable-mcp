@@ -8,10 +8,10 @@ import { sshExec, sshPipeTar } from '../ssh.js';
 import type { SSHOptions } from '../ssh.js';
 import { renderPages, selectPageIds } from '../render.js';
 import { processPage } from '../ocr.js';
-import { parseDocuments } from './list.js';
+import { parseDocuments, LIST_CMD } from './list.js';
 
 const XOCHITL = '/home/root/.local/share/remarkable/xochitl';
-const LIST_CMD = `find ${XOCHITL} -maxdepth 2 -name '*.metadata' -exec sh -c 'echo "---FILE:$1"; cat "$1"' _ {} \\;`;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const PULL_TOOL: Tool = {
   name: 'remarkable_pull',
@@ -69,6 +69,10 @@ export async function handlePull(args: Record<string, unknown>): Promise<CallToo
       targetName = docName(target);
       targetId = target.ID;
 
+      if (!UUID_RE.test(targetId)) {
+        return { isError: true, content: [{ type: 'text', text: `Unexpected document ID format: ${targetId}` }] };
+      }
+
       try {
         const rmdocBuffer = await downloadRmdoc(targetId);
         await extractRmdoc(rmdocBuffer, docDir);
@@ -119,6 +123,10 @@ export async function handlePull(args: Record<string, unknown>): Promise<CallToo
 
       targetName = target.name;
       targetId = target.id;
+
+      if (!UUID_RE.test(targetId)) {
+        return { isError: true, content: [{ type: 'text', text: `Unexpected document ID format: ${targetId}` }] };
+      }
 
       const opts: SSHOptions = { host: connectedHost, port, username, privateKeyPath };
       const tarCmd = `cd ${XOCHITL} && tar cf - ${targetId}.* ${targetId}/ 2>/dev/null`;

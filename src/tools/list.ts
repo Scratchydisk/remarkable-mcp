@@ -6,7 +6,7 @@ import { sshExec } from '../ssh.js';
 import type { SSHOptions } from '../ssh.js';
 
 const XOCHITL = '/home/root/.local/share/remarkable/xochitl';
-const LIST_CMD = `find ${XOCHITL} -maxdepth 2 -name '*.metadata' -exec sh -c 'echo "---FILE:$1"; cat "$1"' _ {} \\;`;
+export const LIST_CMD = `find ${XOCHITL} -maxdepth 2 -name '*.metadata' -exec sh -c 'echo "---FILE:$1"; cat "$1"' _ {} \\;`;
 
 export interface SshDocument {
   id: string;

@@ -2,9 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('../../src/connection.js', () => ({
   probeUsbHttp: vi.fn().mockResolvedValue({ available: true, documents: [
-    { ID: 'a1', VissibleName: 'My Notes', Type: 'DocumentType', ModifiedClient: '2026-04-12T10:00:00Z', Parent: '' },
+    { ID: '12345678-1234-1234-1234-123456789abc', VissibleName: 'My Notes', Type: 'DocumentType', ModifiedClient: '2026-04-12T10:00:00Z', Parent: '' },
   ]}),
-  selectDocument: vi.fn().mockReturnValue({ ID: 'a1', VissibleName: 'My Notes', Type: 'DocumentType', ModifiedClient: '', Parent: '' }),
+  selectDocument: vi.fn().mockReturnValue({ ID: '12345678-1234-1234-1234-123456789abc', VissibleName: 'My Notes', Type: 'DocumentType', ModifiedClient: '', Parent: '' }),
   downloadRmdoc: vi.fn().mockResolvedValue(Buffer.from('fake-zip')),
   extractRmdoc: vi.fn().mockResolvedValue(undefined),
   downloadThumbnail: vi.fn().mockResolvedValue(Buffer.from('fake-thumb')),
@@ -41,10 +41,37 @@ vi.mock('fs/promises', async (importOriginal) => {
   };
 });
 
-import { PULL_TOOL } from '../../src/tools/pull.js';
+import { PULL_TOOL, handlePull } from '../../src/tools/pull.js';
 
 describe('remarkable_pull', () => {
   it('PULL_TOOL.name is remarkable_pull', () => {
     expect(PULL_TOOL.name).toBe('remarkable_pull');
+  });
+});
+
+describe('handlePull', () => {
+  it('returns image content on USB path', async () => {
+    const result = await handlePull({});
+    expect(result.isError).toBeFalsy();
+    const imageBlock = result.content.find((c) => c.type === 'image');
+    expect(imageBlock).toBeDefined();
+    expect((imageBlock as { data: string }).data).toBe('abc');
+  });
+
+  it('returns isError when no document matches', async () => {
+    const { selectDocument } = await import('../../src/connection.js');
+    vi.mocked(selectDocument).mockReturnValueOnce(undefined);
+    const result = await handlePull({ document: 'nonexistent' });
+    expect(result.isError).toBe(true);
+  });
+
+  it('returns isError when no connection', async () => {
+    const { probeUsbHttp } = await import('../../src/connection.js');
+    const { sshExec } = await import('../../src/ssh.js');
+    vi.mocked(probeUsbHttp).mockResolvedValueOnce({ available: false, documents: [] });
+    vi.mocked(sshExec).mockRejectedValueOnce(new Error('timeout'));
+    vi.mocked(sshExec).mockRejectedValueOnce(new Error('timeout'));
+    const result = await handlePull({});
+    expect(result.isError).toBe(true);
   });
 });

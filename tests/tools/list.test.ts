@@ -18,7 +18,7 @@ vi.mock('../../src/config.js', () => ({
   }),
 }));
 
-import { parseDocuments, LIST_TOOL } from '../../src/tools/list.js';
+import { parseDocuments, LIST_TOOL, handleList } from '../../src/tools/list.js';
 
 describe('remarkable_list', () => {
   it('LIST_TOOL.name is remarkable_list', () => {
@@ -49,5 +49,39 @@ describe('remarkable_list', () => {
   it('parseDocuments skips malformed JSON', () => {
     const raw = ['---FILE:/xochitl/bad.metadata', 'not-json'].join('\n');
     expect(parseDocuments(raw)).toHaveLength(0);
+  });
+});
+
+describe('handleList', () => {
+  it('returns USB document list when USB available', async () => {
+    const result = await handleList({});
+    expect(result.isError).toBeFalsy();
+    const text = (result.content[0] as { text: string }).text;
+    expect(text).toContain('[via USB]');
+    expect(text).toContain('My Notes');
+  });
+
+  it('uses SSH when USB unavailable', async () => {
+    const { probeUsbHttp } = await import('../../src/connection.js');
+    const { sshExec } = await import('../../src/ssh.js');
+    vi.mocked(probeUsbHttp).mockResolvedValueOnce({ available: false, documents: [] });
+    vi.mocked(sshExec).mockResolvedValueOnce(
+      '---FILE:/xochitl/aaa.metadata\n{"visibleName":"WiFi Doc","type":"DocumentType","lastModified":"1000"}'
+    );
+    const result = await handleList({});
+    expect(result.isError).toBeFalsy();
+    const text = (result.content[0] as { text: string }).text;
+    expect(text).toContain('[via SSH');
+    expect(text).toContain('WiFi Doc');
+  });
+
+  it('returns error when both USB and SSH fail', async () => {
+    const { probeUsbHttp } = await import('../../src/connection.js');
+    const { sshExec } = await import('../../src/ssh.js');
+    vi.mocked(probeUsbHttp).mockResolvedValueOnce({ available: false, documents: [] });
+    vi.mocked(sshExec).mockRejectedValueOnce(new Error('timeout'));
+    vi.mocked(sshExec).mockRejectedValueOnce(new Error('timeout'));
+    const result = await handleList({});
+    expect(result.isError).toBe(true);
   });
 });
