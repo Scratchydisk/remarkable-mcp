@@ -1,5 +1,4 @@
 import AdmZip from 'adm-zip';
-import { join } from 'path';
 
 export const USB_IP = '10.11.99.1';
 export const USB_HTTP_TIMEOUT_MS = 2000;
