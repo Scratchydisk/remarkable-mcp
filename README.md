@@ -14,40 +14,20 @@ Works with Claude Desktop, Claude Code, Codex, Cursor, and any MCP-compatible cl
 - Node.js 20+
 - reMarkable 2 tablet
 
-## Install
-
-```bash
-npm install -g remarkable-mcr
-```
-
-Or clone and build:
-
-```bash
-git clone https://github.com/you/remarkable-mcr
-cd remarkable-mcr && npm install && npm run build
-```
-
-## First-time setup
-
-Connect your tablet via USB, then ask your agent:
-
-> "Set up my reMarkable. The password is [password from Settings → Help → Copyright and licenses]."
-
-The agent calls `remarkable_setup`, which:
-1. Deploys an SSH keypair (for WiFi use)
-2. Enables the USB web interface on the tablet
-3. Discovers and saves your tablet's WiFi IP
-
 ## Client configuration
 
+No installation required — your MCP client will run the server via `npx` on first use.
+
 ### Claude Desktop
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "remarkable": {
-      "command": "node",
-      "args": ["/path/to/remarkable-mcr/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "remarkable-mcr"]
     }
   }
 }
@@ -60,19 +40,43 @@ The agent calls `remarkable_setup`, which:
   "mcp": {
     "servers": {
       "remarkable": {
-        "command": "node",
-        "args": ["/path/to/remarkable-mcr/dist/index.js"]
+        "command": "npx",
+        "args": ["-y", "remarkable-mcr"]
       }
     }
   }
 }
 ```
 
-### Generic stdio
+### Other MCP clients
+
+Any client that supports stdio MCP servers:
+
+```json
+{
+  "command": "npx",
+  "args": ["-y", "remarkable-mcr"]
+}
+```
+
+### Optional: global install (faster startup)
 
 ```bash
-node /path/to/remarkable-mcr/dist/index.js
+npm install -g remarkable-mcr
 ```
+
+Then use `"command": "remarkable-mcr"` with no `args`.
+
+## First-time setup
+
+Connect your tablet via USB, then ask your agent:
+
+> "Set up my reMarkable. The password is [password from Settings → Help → Copyright and licenses]."
+
+The agent calls `remarkable_setup`, which:
+1. Deploys an SSH keypair (for WiFi use)
+2. Enables the USB web interface on the tablet
+3. Discovers and saves your tablet's WiFi IP
 
 ## Tools
 
