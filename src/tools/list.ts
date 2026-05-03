@@ -1,7 +1,7 @@
 import { basename } from 'path';
 import type { CallToolResult, Tool } from '@modelcontextprotocol/sdk/types.js';
 import { readConfig } from '../config.js';
-import { probeUsbHttp, docName, buildFolderMap, folderPath } from '../connection.js';
+import { probeUsbHttp, fetchAllDocuments, docName, buildFolderMap, folderPath } from '../connection.js';
 import type { FolderEntry } from '../connection.js';
 import { sshExec } from '../ssh.js';
 import type { SSHOptions } from '../ssh.js';
@@ -72,8 +72,9 @@ export async function handleList(args: Record<string, unknown>): Promise<CallToo
   // USB-first: try HTTP web API
   const usbResult = await probeUsbHttp();
   if (usbResult.available) {
-    const fm = buildFolderMap(usbResult.documents);
-    let docs = usbResult.documents
+    const allDocuments = await fetchAllDocuments(usbHost);
+    const fm = buildFolderMap(allDocuments);
+    let docs = allDocuments
       .filter((d) => d.Type === 'DocumentType')
       .sort((a, b) => new Date(b.ModifiedClient).getTime() - new Date(a.ModifiedClient).getTime());
 

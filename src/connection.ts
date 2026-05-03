@@ -48,8 +48,24 @@ export function folderPath(parentId: string, folderMap: Map<string, FolderEntry>
   return parts.join(' / ');
 }
 
+async function fetchFolder(host: string, folderId: string, timeoutMs: number): Promise<RmApiDocument[]> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const url = folderId ? `http://${host}/documents/${folderId}` : `http://${host}/documents/`;
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!response.ok) return [];
+    const items = (await response.json()) as RmApiDocument[];
+    return Array.isArray(items) ? items : [];
+  } catch {
+    clearTimeout(timer);
+    return [];
+  }
+}
+
 /**
- * Probe the USB web interface by fetching /documents/.
+ * Probe the USB web interface by fetching /documents/ (root only, fast).
  * Returns available:false on any error or timeout.
  */
 export async function probeUsbHttp(host = USB_IP, timeoutMs = USB_HTTP_TIMEOUT_MS): Promise<UsbHttpResult> {
@@ -64,6 +80,27 @@ export async function probeUsbHttp(host = USB_IP, timeoutMs = USB_HTTP_TIMEOUT_M
   } catch {
     return { available: false, documents: [] };
   }
+}
+
+/**
+ * Fetch every document on the tablet by recursing all CollectionType folders.
+ * Returns a flat list of all RmApiDocument entries (documents and folders).
+ */
+export async function fetchAllDocuments(host = USB_IP, perFolderTimeoutMs = 5000): Promise<RmApiDocument[]> {
+  const all: RmApiDocument[] = [];
+  const queue: string[] = [''];  // '' = root
+  const visited = new Set<string>();
+  while (queue.length > 0) {
+    const id = queue.shift()!;
+    if (visited.has(id)) continue;
+    visited.add(id);
+    const items = await fetchFolder(host, id, perFolderTimeoutMs);
+    for (const item of items) {
+      all.push(item);
+      if (item.Type === 'CollectionType' && !visited.has(item.ID)) queue.push(item.ID);
+    }
+  }
+  return all;
 }
 
 /**

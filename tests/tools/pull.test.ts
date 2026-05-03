@@ -1,16 +1,22 @@
 import { describe, it, expect, vi } from 'vitest';
 
-vi.mock('../../src/connection.js', () => ({
-  probeUsbHttp: vi.fn().mockResolvedValue({ available: true, documents: [
-    { ID: '12345678-1234-1234-1234-123456789abc', VissibleName: 'My Notes', Type: 'DocumentType', ModifiedClient: '2026-04-12T10:00:00Z', Parent: '' },
-  ]}),
-  selectDocument: vi.fn().mockReturnValue({ ID: '12345678-1234-1234-1234-123456789abc', VissibleName: 'My Notes', Type: 'DocumentType', ModifiedClient: '', Parent: '' }),
-  downloadRmdoc: vi.fn().mockResolvedValue(Buffer.from('fake-zip')),
-  extractRmdoc: vi.fn().mockResolvedValue(undefined),
-  downloadThumbnail: vi.fn().mockResolvedValue(Buffer.from('fake-thumb')),
-  docName: vi.fn().mockReturnValue('My Notes'),
-  USB_IP: '10.11.99.1',
-}));
+vi.mock('../../src/connection.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/connection.js')>();
+  return {
+    ...actual,
+    probeUsbHttp: vi.fn().mockResolvedValue({ available: true, documents: [
+      { ID: '12345678-1234-1234-1234-123456789abc', VissibleName: 'My Notes', Type: 'DocumentType', ModifiedClient: '2026-04-12T10:00:00Z', Parent: '' },
+    ]}),
+    fetchAllDocuments: vi.fn().mockResolvedValue([
+      { ID: '12345678-1234-1234-1234-123456789abc', VissibleName: 'My Notes', Type: 'DocumentType', ModifiedClient: '2026-04-12T10:00:00Z', Parent: '' },
+    ]),
+    selectDocument: vi.fn().mockReturnValue({ ID: '12345678-1234-1234-1234-123456789abc', VissibleName: 'My Notes', Type: 'DocumentType', ModifiedClient: '', Parent: '' }),
+    downloadRmdoc: vi.fn().mockResolvedValue(Buffer.from('fake-zip')),
+    extractRmdoc: vi.fn().mockResolvedValue(undefined),
+    downloadThumbnail: vi.fn().mockResolvedValue(Buffer.from('fake-thumb')),
+    docName: vi.fn().mockReturnValue('My Notes'),
+  };
+});
 
 vi.mock('../../src/render.js', () => ({
   renderPages: vi.fn().mockResolvedValue([{ pageNum: 1, localPath: '/tmp/p.png', format: 'png' }]),

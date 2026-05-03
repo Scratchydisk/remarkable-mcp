@@ -7,6 +7,9 @@ vi.mock('../../src/connection.js', async (importOriginal) => {
     probeUsbHttp: vi.fn().mockResolvedValue({ available: true, documents: [
       { ID: 'a1', VissibleName: 'My Notes', Type: 'DocumentType', ModifiedClient: '2026-04-12T10:00:00Z', Parent: '' },
     ]}),
+    fetchAllDocuments: vi.fn().mockResolvedValue([
+      { ID: 'a1', VissibleName: 'My Notes', Type: 'DocumentType', ModifiedClient: '2026-04-12T10:00:00Z', Parent: '' },
+    ]),
     selectDocument: vi.fn(),
     docName: vi.fn((d: { VissibleName: string }) => d.VissibleName),
   };

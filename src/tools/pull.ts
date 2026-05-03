@@ -3,7 +3,7 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import type { CallToolResult, Tool } from '@modelcontextprotocol/sdk/types.js';
 import { readConfig } from '../config.js';
-import { probeUsbHttp, selectDocument, downloadRmdoc, extractRmdoc, downloadThumbnail, docName, folderPath } from '../connection.js';
+import { probeUsbHttp, fetchAllDocuments, selectDocument, downloadRmdoc, extractRmdoc, downloadThumbnail, docName, folderPath } from '../connection.js';
 import { sshExec, sshPipeTar } from '../ssh.js';
 import type { SSHOptions } from '../ssh.js';
 import { renderPages, selectPageIds } from '../render.js';
@@ -63,12 +63,13 @@ export async function handlePull(args: Record<string, unknown>): Promise<CallToo
     const usbResult = await probeUsbHttp();
 
     if (usbResult.available) {
+      const allDocuments = await fetchAllDocuments(usbHost);
       const docArg = args.document as string | undefined;
       const folderArg = args.folder as string | undefined;
-      const target = selectDocument(usbResult.documents, docArg, folderArg);
+      const target = selectDocument(allDocuments, docArg, folderArg);
 
       if (!target) {
-        const names = usbResult.documents.filter((d) => d.Type === 'DocumentType').slice(0, 5).map(docName).join(', ');
+        const names = allDocuments.filter((d) => d.Type === 'DocumentType').slice(0, 5).map(docName).join(', ');
         return { isError: true, content: [{ type: 'text', text: `No document matching "${docArg}". Available: ${names}` }] };
       }
 
