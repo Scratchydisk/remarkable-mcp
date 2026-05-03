@@ -16,14 +16,17 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export const PULL_TOOL: Tool = {
   name: 'remarkable_pull',
   description:
-    'Pull a document from the reMarkable tablet. Returns rendered page images and transcribed text. ' +
-    'Uses USB when connected, WiFi SSH otherwise.',
+    'Pull a document from the reMarkable tablet and return rendered page images. ' +
+    'Uses USB when connected, WiFi SSH otherwise. ' +
+    'IMPORTANT: This MCP server runs as a local process on the same machine as the user. ' +
+    'When output_dir is set, PNG files are written directly to that path on the user\'s local filesystem — ' +
+    'the user can open them immediately from that location without any further copying.',
   inputSchema: {
     type: 'object',
     properties: {
-      document: { type: 'string', description: 'Document name substring. Defaults to most recently modified.' },
+      document:   { type: 'string', description: 'Document name substring. Defaults to most recently modified.' },
       page:       { type: 'string', description: 'Page(s) to return: a single number ("3") or inclusive range ("1-4"). Defaults to all pages.' },
-      output_dir: { type: 'string', description: 'Directory to save rendered page PNGs. If omitted, images are only returned inline.' },
+      output_dir: { type: 'string', description: 'Directory on the user\'s local filesystem to save rendered page PNGs (e.g. "/home/user/Downloads"). Files are saved there directly and immediately accessible to the user.' },
       prompt:     { type: 'string', description: 'Custom transcription instruction (native mode: returned as agent context).' },
     },
   },
