@@ -1,9 +1,12 @@
 {
   "name": "remarkable-mcp",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "description": "MCP server for reMarkable 2 — pull handwritten notes into any AI agent",
   "license": "MIT",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "files": [
     "dist",
     "README.md"
@@ -15,21 +18,32 @@
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "mcpb": "node scripts/build-mcpb.mjs",
+    "inspect": "npm run build && npx -y @modelcontextprotocol/inspector node dist/index.js",
+    "validate": "npm run build && node scripts/validate-mcp.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@resvg/resvg-js": "^2.0.0",
     "adm-zip": "^0.5.16",
-    "remarkable-rm": "^1.0.0",
-    "ssh2": "^1.17.0"
+    "minisearch": "^7.2.0",
+    "remarkable-rm": "^1.1.0",
+    "sharp": "^0.34.5",
+    "ssh2": "^1.17.0",
+    "zod": "^4.4.2"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/adm-zip": "^0.5.7",
     "@types/node": "^22.0.0",
     "@types/ssh2": "^1.15.0",
+    "eslint": "^10.3.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
+    "typescript-eslint": "^8.59.1",
     "vitest": "^4.0.0"
   }
 }
