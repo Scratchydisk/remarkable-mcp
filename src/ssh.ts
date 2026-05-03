@@ -1,5 +1,5 @@
 import { Client, type ConnectConfig } from 'ssh2';
-import { readFile, mkdir } from 'fs/promises';
+import { readFile, mkdir, access } from 'fs/promises';
 import { execFile, spawn } from 'child_process';
 import { promisify } from 'util';
 import { dirname } from 'path';
@@ -85,7 +85,11 @@ export async function sshPipeTar(opts: SSHOptions, remoteCmd: string, localDir: 
 
 export async function generateKeyPair(keyPath: string): Promise<{ publicKey: string }> {
   await mkdir(dirname(keyPath), { recursive: true });
-  await execFileAsync('ssh-keygen', ['-t', 'ed25519', '-f', keyPath, '-N', '', '-q', '-C', 'remarkable-mcr'], { timeout: 10000 });
+  let keyExists = false;
+  try { await access(keyPath); keyExists = true; } catch { /* doesn't exist */ }
+  if (!keyExists) {
+    await execFileAsync('ssh-keygen', ['-t', 'ed25519', '-f', keyPath, '-N', '', '-q', '-C', 'remarkable-mcr'], { timeout: 10000 });
+  }
   const publicKey = (await readFile(`${keyPath}.pub`, 'utf8')).trim();
   return { publicKey };
 }

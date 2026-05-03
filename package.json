@@ -8,6 +8,9 @@
     "dist",
     "README.md"
   ],
+  "bundledDependencies": [
+    "remarkable-rm"
+  ],
   "bin": {
     "remarkable-mcr": "dist/index.js"
   },
