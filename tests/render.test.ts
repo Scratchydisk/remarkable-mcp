@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('remarkable-rm', () => ({
   renderToPng: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3])),
+  renderToJpeg: vi.fn().mockResolvedValue(new Uint8Array([4, 5, 6])),
 }));
 
 vi.mock('fs/promises', async (importOriginal) => {
@@ -24,8 +25,8 @@ describe('render', () => {
     expect(selectPageIds({})).toEqual([]);
   });
 
-  it('handles cPages entries without id', () => {
-    expect(selectPageIds({ cPages: { pages: [{ id: 'aaa' }, {}] } })).toEqual(['aaa', '']);
+  it('drops cPages entries without id', () => {
+    expect(selectPageIds({ cPages: { pages: [{ id: 'aaa' }, {}] } })).toEqual(['aaa']);
   });
 
   it('handles cPages string entries', () => {

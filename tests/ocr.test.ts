@@ -6,14 +6,12 @@ describe('ocr', () => {
     expect(buildOllamaPayload('llama3.2-vision', 'abc', 'Transcribe').model).toBe('llama3.2-vision');
   });
 
-  it('embeds image as data URL', () => {
-    const content = buildOllamaPayload('m', 'abc', 'x').messages[0].content as Array<{ type: string; image_url?: { url: string } }>;
-    expect(content.find((c) => c.type === 'image_url')?.image_url?.url).toBe('data:image/png;base64,abc');
+  it('puts the prompt in message content', () => {
+    expect(buildOllamaPayload('m', 'abc', 'do it').messages[0].content).toBe('do it');
   });
 
-  it('includes prompt as text block', () => {
-    const content = buildOllamaPayload('m', 'abc', 'do it').messages[0].content as Array<{ type: string; text?: string }>;
-    expect(content.find((c) => c.type === 'text')?.text).toBe('do it');
+  it('puts the raw base64 image in the images array (no data URL prefix)', () => {
+    expect(buildOllamaPayload('m', 'abc', 'x').messages[0].images).toEqual(['abc']);
   });
 
   it('sets stream false', () => {

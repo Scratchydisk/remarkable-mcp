@@ -15,25 +15,24 @@ export interface PageResult {
   pageNum: number;
   text: string;
   imageBase64: string;
-  renderFormat: 'png' | 'thumbnail';
+  renderFormat: 'png' | 'jpeg' | 'thumbnail';
 }
 
 export interface OllamaPayload {
   model: string;
-  messages: Array<{ role: string; content: Array<{ type: string; image_url?: { url: string }; text?: string }> }>;
+  messages: Array<{ role: string; content: string; images: string[] }>;
   stream: boolean;
 }
 
+/**
+ * Build the payload for Ollama's native /api/chat endpoint.
+ * Uses the `images` array (base64 PNG, no data URL prefix) which is the
+ * documented Ollama format and supported across all vision-capable models.
+ */
 export function buildOllamaPayload(model: string, imageBase64: string, prompt: string): OllamaPayload {
   return {
     model,
-    messages: [{
-      role: 'user',
-      content: [
-        { type: 'image_url', image_url: { url: `data:image/png;base64,${imageBase64}` } },
-        { type: 'text', text: prompt },
-      ],
-    }],
+    messages: [{ role: 'user', content: prompt, images: [imageBase64] }],
     stream: false,
   };
 }
@@ -44,15 +43,15 @@ async function ocrViaOllama(imageBase64: string, config: OcrConfig, prompt: stri
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (config.ollamaApiKey) headers['Authorization'] = `Bearer ${config.ollamaApiKey}`;
 
-  const response = await fetch(`${host}/v1/chat/completions`, {
+  const response = await fetch(`${host}/api/chat`, {
     method: 'POST',
     headers,
     body: JSON.stringify(buildOllamaPayload(model, imageBase64, prompt)),
     signal: AbortSignal.timeout(60000),
   });
   if (!response.ok) throw new Error(`Ollama ${response.status} ${response.statusText}`);
-  type R = { choices?: Array<{ message?: { content?: string } }> };
-  return ((await response.json()) as R).choices?.[0]?.message?.content ?? '';
+  type R = { message?: { content?: string } };
+  return ((await response.json()) as R).message?.content ?? '';
 }
 
 async function ocrViaLocal(imagePath: string, config: OcrConfig): Promise<string> {
