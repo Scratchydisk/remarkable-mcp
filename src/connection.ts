@@ -70,10 +70,20 @@ export async function probeUsbHttp(host = USB_IP, timeoutMs = USB_HTTP_TIMEOUT_M
  * Select a document from the HTTP document list.
  * Filters to DocumentType only. Returns undefined if no match.
  */
-export function selectDocument(documents: RmApiDocument[], name: string | undefined): RmApiDocument | undefined {
-  const docs = documents
+export function selectDocument(
+  documents: RmApiDocument[],
+  name: string | undefined,
+  folder: string | undefined = undefined,
+): RmApiDocument | undefined {
+  const fm = buildFolderMap(documents);
+  let docs = documents
     .filter((d) => d.Type === 'DocumentType')
     .sort((a, b) => new Date(b.ModifiedClient).getTime() - new Date(a.ModifiedClient).getTime());
+
+  if (folder) {
+    const ft = folder.toLowerCase();
+    docs = docs.filter((d) => folderPath(d.Parent, fm).toLowerCase().includes(ft));
+  }
 
   if (!name) return docs[0];
   const term = name.toLowerCase();

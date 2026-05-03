@@ -3,12 +3,12 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import type { CallToolResult, Tool } from '@modelcontextprotocol/sdk/types.js';
 import { readConfig } from '../config.js';
-import { probeUsbHttp, selectDocument, downloadRmdoc, extractRmdoc, downloadThumbnail, docName } from '../connection.js';
+import { probeUsbHttp, selectDocument, downloadRmdoc, extractRmdoc, downloadThumbnail, docName, folderPath } from '../connection.js';
 import { sshExec, sshPipeTar } from '../ssh.js';
 import type { SSHOptions } from '../ssh.js';
 import { renderPages, selectPageIds } from '../render.js';
 import { processPage } from '../ocr.js';
-import { parseDocuments, LIST_CMD } from './list.js';
+import { parseDocuments, parseFolderMap, LIST_CMD } from './list.js';
 
 const XOCHITL = '/home/root/.local/share/remarkable/xochitl';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -25,6 +25,7 @@ export const PULL_TOOL: Tool = {
     type: 'object',
     properties: {
       document:   { type: 'string', description: 'Document name substring. Defaults to most recently modified.' },
+      folder:     { type: 'string', description: 'Folder name substring to restrict the search. Use when the same document name exists in multiple folders.' },
       page:       { type: 'string', description: 'Page(s) to return: a single number ("3") or inclusive range ("1-4"). Defaults to all pages.' },
       output_dir: { type: 'string', description: 'Directory on the user\'s local filesystem to save rendered page PNGs (e.g. "/home/user/Downloads"). Files are saved there directly and immediately accessible to the user.' },
       prompt:     { type: 'string', description: 'Custom transcription instruction (native mode: returned as agent context).' },
@@ -63,7 +64,8 @@ export async function handlePull(args: Record<string, unknown>): Promise<CallToo
 
     if (usbResult.available) {
       const docArg = args.document as string | undefined;
-      const target = selectDocument(usbResult.documents, docArg);
+      const folderArg = args.folder as string | undefined;
+      const target = selectDocument(usbResult.documents, docArg, folderArg);
 
       if (!target) {
         const names = usbResult.documents.filter((d) => d.Type === 'DocumentType').slice(0, 5).map(docName).join(', ');
@@ -112,10 +114,16 @@ export async function handlePull(args: Record<string, unknown>): Promise<CallToo
         return { isError: true, content: [{ type: 'text', text: 'Cannot connect to tablet. Connect USB or check WiFi SSH config.' }] };
       }
 
-      const docs = parseDocuments(raw);
+      const fm = parseFolderMap(raw);
+      let docs = parseDocuments(raw);
       if (docs.length === 0) return { content: [{ type: 'text', text: 'No documents found on the tablet.' }] };
 
       const docArg = args.document as string | undefined;
+      const folderArg = args.folder as string | undefined;
+      if (folderArg) {
+        const ft = folderArg.toLowerCase();
+        docs = docs.filter((d) => folderPath(d.parent, fm).toLowerCase().includes(ft));
+      }
       const target = docArg
         ? docs.find((d) => d.name.toLowerCase().includes(docArg.toLowerCase()))
         : docs[0];

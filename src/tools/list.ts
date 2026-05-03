@@ -52,11 +52,20 @@ export function parseFolderMap(raw: string): Map<string, FolderEntry> {
 
 export const LIST_TOOL: Tool = {
   name: 'remarkable_list',
-  description: 'List all documents on the reMarkable tablet, sorted by most recently modified.',
-  inputSchema: { type: 'object', properties: {} },
+  description:
+    'List all documents on the reMarkable tablet, sorted by most recently modified. ' +
+    'Documents inside folders are shown with their full path (e.g. "Work / Meeting Notes"). ' +
+    'Use the folder parameter to filter to a specific folder.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      folder: { type: 'string', description: 'Filter to documents inside this folder name (substring match). Omit to list all documents.' },
+    },
+  },
 };
 
-export async function handleList(_args: Record<string, unknown>): Promise<CallToolResult> {
+export async function handleList(args: Record<string, unknown>): Promise<CallToolResult> {
+  const folderArg = (args.folder as string | undefined)?.toLowerCase();
   const config = await readConfig();
   const { usbHost, wifiHost, port, username, privateKeyPath } = config.connection;
 
@@ -64,9 +73,13 @@ export async function handleList(_args: Record<string, unknown>): Promise<CallTo
   const usbResult = await probeUsbHttp();
   if (usbResult.available) {
     const fm = buildFolderMap(usbResult.documents);
-    const docs = usbResult.documents
+    let docs = usbResult.documents
       .filter((d) => d.Type === 'DocumentType')
       .sort((a, b) => new Date(b.ModifiedClient).getTime() - new Date(a.ModifiedClient).getTime());
+
+    if (folderArg) {
+      docs = docs.filter((d) => folderPath(d.Parent, fm).toLowerCase().includes(folderArg));
+    }
 
     if (docs.length === 0) return { content: [{ type: 'text', text: 'No documents found on the tablet.' }] };
     const lines = docs.map((d, i) => {
@@ -84,9 +97,12 @@ export async function handleList(_args: Record<string, unknown>): Promise<CallTo
     const opts: SSHOptions = { host, port, username, privateKeyPath };
     try {
       const raw = await sshExec(opts, LIST_CMD, 60000);
-      const docs = parseDocuments(raw);
-      if (docs.length === 0) return { content: [{ type: 'text', text: 'No documents found on the tablet.' }] };
       const fm = parseFolderMap(raw);
+      let docs = parseDocuments(raw);
+      if (folderArg) {
+        docs = docs.filter((d) => folderPath(d.parent, fm).toLowerCase().includes(folderArg));
+      }
+      if (docs.length === 0) return { content: [{ type: 'text', text: 'No documents found on the tablet.' }] };
       const lines = docs.map((d, i) => {
         const date = d.lastModified ? new Date(d.lastModified).toLocaleDateString('en-GB') : 'unknown';
         const fp = folderPath(d.parent, fm);
