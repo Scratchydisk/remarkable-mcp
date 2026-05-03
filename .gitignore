@@ -1,2 +1,7 @@
 node_modules/
 dist/
+build/
+*.tgz
+*.mcpb
+*.dxt
+validation-*.log
