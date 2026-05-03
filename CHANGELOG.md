@@ -2,9 +2,13 @@
 
 All notable changes to `remarkable-mcp`.
 
-## 0.5.0
+## 1.0.0 — V1 release
 
-### Added
+First public release. Combines all the hardening, polish, and features that landed across the 0.x line: a six-tool MCP surface (setup, list, pull, status, search, index, save_transcription), USB + WiFi + mDNS connectivity with categorised error reasons, host-key pinning, document caching, configurable PNG/JPEG rendering, client-aware response sizing, and full-text search.
+
+The pre-1.0 entries below are kept for archaeology; they describe development milestones rather than published versions.
+
+### Added at the V1 mark
 - **Full-text search** across the OCR'd contents of cached documents. Powered by [MiniSearch](https://github.com/lucaong/minisearch) — a pure-JS BM25 index, no native deps, ~50 KB on disk for thousands of pages. Page-level hits with snippets, BM25 ranking, prefix and fuzzy matching, optional folder filter.
   - New tool **`remarkable_search`** — `{ query, limit?, folder? }` → ranked page hits.
   - New tool **`remarkable_index`** — bulk-OCRs every document on the tablet over USB and adds it to the corpus. Skips docs already cached and indexed for the current mtime unless `force: true`. Requires an OCR provider that produces text (`ollama` or `local`); refuses to run with `native`.
