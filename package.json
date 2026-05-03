@@ -1,5 +1,5 @@
 {
-  "name": "remarkable-mcr",
+  "name": "remarkable-mcp",
   "version": "0.1.0",
   "description": "MCP server for reMarkable 2 — pull handwritten notes into any AI agent",
   "license": "MIT",
@@ -12,7 +12,7 @@
     "remarkable-rm"
   ],
   "bin": {
-    "remarkable-mcr": "dist/index.js"
+    "remarkable-mcp": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",

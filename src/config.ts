@@ -25,7 +25,7 @@ export interface Config {
   ocr: OcrConfig;
 }
 
-export const CONFIG_DIR = join(homedir(), '.config', 'remarkable-mcr');
+export const CONFIG_DIR = join(homedir(), '.config', 'remarkable-mcp');
 export const CONFIG_PATH = join(CONFIG_DIR, 'config.json');
 
 export function buildDefaultConfig(configDir: string): Config {

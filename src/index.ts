@@ -7,7 +7,7 @@ import { LIST_TOOL, handleList } from './tools/list.js';
 import { PULL_TOOL, handlePull } from './tools/pull.js';
 
 const server = new Server(
-  { name: 'remarkable-mcr', version: '0.1.0' },
+  { name: 'remarkable-mcp', version: '0.1.0' },
   { capabilities: { tools: {} } },
 );
 

@@ -88,7 +88,7 @@ export async function generateKeyPair(keyPath: string): Promise<{ publicKey: str
   let keyExists = false;
   try { await access(keyPath); keyExists = true; } catch { /* doesn't exist */ }
   if (!keyExists) {
-    await execFileAsync('ssh-keygen', ['-t', 'ed25519', '-f', keyPath, '-N', '', '-q', '-C', 'remarkable-mcr'], { timeout: 10000 });
+    await execFileAsync('ssh-keygen', ['-t', 'ed25519', '-f', keyPath, '-N', '', '-q', '-C', 'remarkable-mcp'], { timeout: 10000 });
   }
   const publicKey = (await readFile(`${keyPath}.pub`, 'utf8')).trim();
   return { publicKey };

@@ -1,4 +1,4 @@
-# remarkable-mcr
+# remarkable-mcp
 
 MCP server for reMarkable 2 — pull handwritten notes and diagrams into any AI agent.
 
@@ -27,7 +27,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "remarkable": {
       "command": "npx",
-      "args": ["-y", "remarkable-mcr"]
+      "args": ["-y", "remarkable-mcp"]
     }
   }
 }
@@ -41,7 +41,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
     "servers": {
       "remarkable": {
         "command": "npx",
-        "args": ["-y", "remarkable-mcr"]
+        "args": ["-y", "remarkable-mcp"]
       }
     }
   }
@@ -55,17 +55,17 @@ Any client that supports stdio MCP servers:
 ```json
 {
   "command": "npx",
-  "args": ["-y", "remarkable-mcr"]
+  "args": ["-y", "remarkable-mcp"]
 }
 ```
 
 ### Optional: global install (faster startup)
 
 ```bash
-npm install -g remarkable-mcr
+npm install -g remarkable-mcp
 ```
 
-Then use `"command": "remarkable-mcr"` with no `args`.
+Then use `"command": "remarkable-mcp"` with no `args`.
 
 ## First-time setup
 
@@ -100,7 +100,7 @@ Pulls a document and returns rendered page images. Parameters:
 
 ## OCR modes
 
-Set in `~/.config/remarkable-mcr/config.json`:
+Set in `~/.config/remarkable-mcp/config.json`:
 
 - **native** (default): the host agent's LLM reads the image directly — no extra API key needed
 - **ollama**: sends image to a local Ollama instance (`llama3.2-vision` or configured model)
