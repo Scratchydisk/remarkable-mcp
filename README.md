@@ -160,6 +160,36 @@ Bridges native-OCR-mode pulls into the search index. The host LLM reads the page
 
 Either `doc_id` or `document` must be provided. The text is appended to whatever the cache already has for that document; calling it twice with overlapping pages overwrites the previous entries. After saving, the document is immediately findable via `remarkable_search`.
 
+## Try it — example prompts
+
+Once installed, ask your agent any of these:
+
+1. **"Set up my reMarkable. The password is `…`."** *(plug in via USB; password from Settings → Help → Copyright and licenses)*
+   The agent runs `remarkable_setup` once — deploys an SSH key, enables the USB web interface, pins the host-key fingerprint, captures the WiFi IP.
+
+2. **"Pull my latest reMarkable notebook and read it back to me."**
+   Agent calls `remarkable_list` to find the most recently modified document, then `remarkable_pull` to fetch and render its pages. In native OCR mode, the agent transcribes the images itself in its reply; in `ollama`/`local` mode the OCR text is included in the response.
+
+3. **"Find my reMarkable notes that mention `<topic>`."**
+   Agent calls `remarkable_search` against the local BM25 index. (Requires having pulled some documents previously, or running `remarkable_index` for a one-shot bulk OCR; see the *Search* section below.)
+
+Other useful turns to try:
+
+- *"What's the status of my reMarkable connection?"* → `remarkable_status` with reachability + categorised error reasons.
+- *"My WiFi changed; refresh the reMarkable IP."* → `remarkable_setup` with no password (refresh mode).
+- *"Pull pages 1 to 3 of `<doc>` as JPEG and save them to `~/Downloads`."* → `remarkable_pull` with `page="1-3"`, `format="jpeg"`, and `output_dir`.
+
+## Testing without a reMarkable tablet
+
+For reviewers and contributors who don't have a tablet on hand:
+
+1. Install the `.mcpb` (or `npx -y remarkable-mcp`) into your MCP client.
+2. Ask the agent: *"Run remarkable_status."*
+3. Expected output: a clean diagnostic — *"USB HTTP not reachable…"*, *"WiFi SSH no host configured…"*, *"Host key not pinned…"*, plus the config and cache paths and render defaults. **No stack trace, no thrown exception, no generic 500-style error.**
+4. Try error-path coverage: *"Pull a document with `max_width: huge`."* → expect a specific zod validation error naming the offending field, never a server crash.
+
+This exercises the manifest, the schema validation, the tool annotations, and the error-message standard end-to-end, with no hardware. Full functionality (list / pull / search / save_transcription) requires a reMarkable 2 on firmware ≥ 3.9. Repository contributors can also clone and run `npm run validate` for the same coverage as a CLI-friendly transcript.
+
 ## OCR modes
 
 Set in `~/.config/remarkable-mcp/config.json`:
@@ -271,6 +301,14 @@ Anthropic's review process expects test credentials, but this server talks to ph
 - **Spec links**: the firmware ≥ 3.9 requirement (USB HTTP path), the WiFi SSH fallback, and the on-tablet password location (Settings → Help → Copyright and licenses).
 - **Static-test path**: reviewers can install the `.mcpb` and run `remarkable_status` with no tablet connected; it returns a clean diagnostic ("USB HTTP not reachable; WiFi SSH no host configured") instead of crashing or returning a generic error. This exercises the schema, the manifest, and the error-message standard without hardware.
 - **Source code** is public on GitHub (MIT) — reviewers can audit the SSH/USB code paths directly.
+
+## Privacy
+
+`remarkable-mcp` is a local-only MCP server. No telemetry, no remote services operated by the maintainer; the only network traffic the server originates is to **your reMarkable** (USB or LAN) and, if you've configured it, **your local Ollama instance**. See [PRIVACY.md](PRIVACY.md) for the full data-flow audit.
+
+## Security
+
+Vulnerability reports → open an issue at <https://github.com/Scratchydisk/remarkable-mcp/issues> (use a private security advisory if the issue is sensitive). Setup-time SSH host-key pinning means the WiFi path can't be MITM'd after first USB pairing; see the README's [security note](#first-time-setup) for the full threat model.
 
 ## Built on
 
