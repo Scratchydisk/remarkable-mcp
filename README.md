@@ -18,7 +18,9 @@ Works with Claude Desktop, Claude Code, Codex, Cursor, and any MCP-compatible cl
 
 ### Claude Desktop — single-click install (recommended)
 
-Download the latest **`remarkable-mcp-X.Y.Z.mcpb`** from [Releases](https://github.com/Scratchydisk/remarkable-mcr/releases) and double-click it. Claude Desktop opens the install dialog; click **Install**, restart Claude, and you're ready. No CLI, no config editing.
+**[⬇ Download the latest `.mcpb`](https://github.com/Scratchydisk/remarkable-mcp/releases/latest/download/remarkable-mcp.mcpb)** — then double-click the file. Claude Desktop opens the install dialog; click **Install**, restart Claude, and you're ready. No CLI, no config editing.
+
+All releases (with checksums and changelog) are at <https://github.com/Scratchydisk/remarkable-mcp/releases>.
 
 > `.mcpb` (MCP Bundle, formerly `.dxt`) is Anthropic's single-file extension format. The bundle ships with all dependencies embedded, so you don't need Node.js or `npm` for the Desktop install path.
 
@@ -214,7 +216,7 @@ npm run mcpb     # build remarkable-mcp-X.Y.Z.mcpb (Claude Desktop bundle)
 
 1. Bump `version` in `package.json` and update `CHANGELOG.md`.
 2. `npm test && npm run lint && npm run typecheck`.
-3. `npm run mcpb` — produces `remarkable-mcp-X.Y.Z.mcpb` (single-click installable).
+3. `npm run mcpb` — produces both `remarkable-mcp-X.Y.Z.mcpb` (versioned, archival) and `remarkable-mcp.mcpb` (unversioned mirror, used by the `releases/latest/download/` link in the README).
 4. `npm pack` — produces `remarkable-mcp-X.Y.Z.tgz` (npm-installable for CLI users).
 5. Validate end-to-end with [**MCP Inspector**](https://modelcontextprotocol.io/docs/tools/inspector) — the test harness referenced in Anthropic's [connector review criteria](https://claude.com/docs/connectors/building/review-criteria):
    ```bash
@@ -230,7 +232,16 @@ npm run mcpb     # build remarkable-mcp-X.Y.Z.mcpb (Claude Desktop bundle)
    ```bash
    git tag vX.Y.Z && git push --tags
    ```
-7. Create a GitHub Release with both artefacts attached.
+7. Create a GitHub Release with all artefacts attached:
+   ```bash
+   gh release create vX.Y.Z \
+     remarkable-mcp-X.Y.Z.mcpb \
+     remarkable-mcp.mcpb \
+     remarkable-mcp-X.Y.Z.tgz \
+     validation-X.Y.Z.log \
+     --title "vX.Y.Z" --notes-file CHANGELOG.md
+   ```
+   Both the versioned and unversioned `.mcpb` must be attached so the README's "download latest" link keeps working.
 8. `npm publish` (when ready for the npm registry).
 9. **Submit the `.mcpb` to Anthropic's curated directory** via <https://forms.gle/tyiAZvch1kDADKoP9>.
 

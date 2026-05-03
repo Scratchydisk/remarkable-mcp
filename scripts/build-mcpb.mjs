@@ -13,7 +13,7 @@
  * Spec: https://github.com/anthropics/dxt/blob/main/MANIFEST.md
  */
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -21,6 +21,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
 const STAGING = join(ROOT, 'build', 'mcpb');
 const OUTPUT = join(ROOT, `remarkable-mcp-${pkg.version}.mcpb`);
+const OUTPUT_LATEST = join(ROOT, 'remarkable-mcp.mcpb');  // unversioned copy for `releases/latest/download/` URL
 
 function run(cmd, args, opts = {}) {
   console.log(`> ${cmd} ${args.join(' ')}`);
@@ -126,11 +127,11 @@ const manifest = {
   },
   repository: {
     type: 'git',
-    url: 'https://github.com/Scratchydisk/remarkable-mcr.git',
+    url: 'https://github.com/Scratchydisk/remarkable-mcp.git',
   },
-  homepage: 'https://github.com/Scratchydisk/remarkable-mcr',
-  documentation: 'https://github.com/Scratchydisk/remarkable-mcr#readme',
-  support: 'https://github.com/Scratchydisk/remarkable-mcr/issues',
+  homepage: 'https://github.com/Scratchydisk/remarkable-mcp',
+  documentation: 'https://github.com/Scratchydisk/remarkable-mcp#readme',
+  support: 'https://github.com/Scratchydisk/remarkable-mcp/issues',
   ...(hasIcon ? { icon: 'icon.png' } : {}),
   license: pkg.license,
   keywords: ['remarkable', 'handwriting', 'ocr', 'notes', 'tablet', 'rm2'],
@@ -164,4 +165,9 @@ run('npx', ['-y', '@anthropic-ai/mcpb', 'validate', join(STAGING, 'manifest.json
 rmSync(OUTPUT, { force: true });
 run('npx', ['-y', '@anthropic-ai/mcpb', 'pack', STAGING, OUTPUT]);
 
+// 8. Mirror the versioned tarball as `remarkable-mcp.mcpb` so the GitHub Releases
+//    `latest/download/<filename>` URL stays stable across version bumps.
+copyFileSync(OUTPUT, OUTPUT_LATEST);
+
 console.log(`\n✓ Built ${OUTPUT}`);
+console.log(`  Mirrored to ${OUTPUT_LATEST}`);
