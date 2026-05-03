@@ -4,6 +4,25 @@
   "description": "MCP server for reMarkable 2 — pull handwritten notes into any AI agent",
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Scratchydisk/remarkable-mcp.git"
+  },
+  "homepage": "https://github.com/Scratchydisk/remarkable-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/Scratchydisk/remarkable-mcp/issues"
+  },
+  "keywords": [
+    "mcp",
+    "remarkable",
+    "remarkable-2",
+    "handwriting",
+    "ocr",
+    "notes",
+    "tablet",
+    "claude",
+    "anthropic"
+  ],
   "engines": {
     "node": ">=20"
   },
