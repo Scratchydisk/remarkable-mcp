@@ -15,7 +15,11 @@ vi.mock('../../src/connection.js', async (importOriginal) => {
   };
 });
 
-vi.mock('../../src/ssh.js', () => ({ sshExec: vi.fn() }));
+vi.mock('../../src/ssh.js', () => ({
+  sshExec: vi.fn(),
+  resolveTabletMdns: vi.fn().mockResolvedValue(null),
+  categoriseSshError: (e: Error) => e.message,
+}));
 
 vi.mock('../../src/config.js', () => ({
   readConfig: vi.fn().mockResolvedValue({
