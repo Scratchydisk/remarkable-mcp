@@ -4,7 +4,7 @@ Reverse-engineered from firmware observation and community research. Not officia
 
 **Base URL:** `http://10.11.99.1` (USB only — fixed IP, no auth required)
 
-Must be enabled on-tablet: **Settings → Storage → USB web interface**
+Must be enabled before use. Older firmware exposed a toggle at **Settings → Storage → USB web interface**, but this option is absent on current firmware (3.x+). Enable via SSH instead — see [Enabling the USB web interface via SSH](#enabling-the-usb-web-interface-via-ssh) below.
 
 ---
 
