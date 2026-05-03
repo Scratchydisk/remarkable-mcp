@@ -2,6 +2,16 @@
 
 All notable changes to `remarkable-mcp`.
 
+## 1.0.1 — docs polish
+
+Documentation-only release; no code changes.
+
+- Adds [PRIVACY.md](PRIVACY.md) — full data-flow audit. Required by Anthropic's [Software Directory policy](https://support.claude.com/en/articles/13145358-anthropic-software-directory-policy).
+- README "Try it — example prompts" section with the three core flows (setup, pull, search) plus follow-up prompts. Required by the policy.
+- README "Testing without a reMarkable tablet" subsection that walks reviewers through the static-test path (`remarkable_status` with no tablet, `npm run validate` for the full 58-assertion transcript). Substitutes for the policy-expected "test account with sample data" since the server is hardware-bound.
+- Short Privacy + Security sections in the README linking to PRIVACY.md and the issue tracker.
+- `package.json` `repository`, `homepage`, `bugs`, and `keywords` fields added (also required by npm provenance verification, which is why v1.0.0 took several attempts to land).
+
 ## 1.0.0 — V1 release
 
 First public release. Combines all the hardening, polish, and features that landed across the 0.x line: a six-tool MCP surface (setup, list, pull, status, search, index, save_transcription), USB + WiFi + mDNS connectivity with categorised error reasons, host-key pinning, document caching, configurable PNG/JPEG rendering, client-aware response sizing, and full-text search.
