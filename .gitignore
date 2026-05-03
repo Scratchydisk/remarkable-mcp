@@ -5,3 +5,4 @@ build/
 *.mcpb
 *.dxt
 validation-*.log
+release-notes-*.md
