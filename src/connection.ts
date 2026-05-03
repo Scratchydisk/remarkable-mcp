@@ -1,5 +1,6 @@
 import AdmZip from 'adm-zip';
 import { createConnection } from 'net';
+import { debug } from './debug.js';
 
 export const USB_IP = '10.11.99.1';
 export const USB_HTTP_TIMEOUT_MS = 2000;
@@ -24,11 +25,30 @@ export function docName(doc: RmApiDocument): string {
 
 export interface FolderEntry { name: string; parent: string; }
 
-/** Build a map of folder UUID → { name, parent } from a flat documents list. */
-export function buildFolderMap(documents: RmApiDocument[]): Map<string, FolderEntry> {
+/** Unified document shape used by the rest of the app. */
+export interface UnifiedDoc {
+  id: string;
+  name: string;
+  modifiedMs: number;
+  parent: string;
+  isFolder: boolean;
+}
+
+export function fromHttpDoc(d: RmApiDocument): UnifiedDoc {
+  return {
+    id: d.ID,
+    name: docName(d),
+    modifiedMs: new Date(d.ModifiedClient).getTime() || 0,
+    parent: d.Parent ?? '',
+    isFolder: d.Type === 'CollectionType',
+  };
+}
+
+/** Build a map of folder UUID → { name, parent } from a unified documents list. */
+export function buildFolderMap(documents: UnifiedDoc[]): Map<string, FolderEntry> {
   const map = new Map<string, FolderEntry>();
   for (const d of documents) {
-    if (d.Type === 'CollectionType') map.set(d.ID, { name: docName(d), parent: d.Parent });
+    if (d.isFolder) map.set(d.id, { name: d.name, parent: d.parent });
   }
   return map;
 }
@@ -48,6 +68,30 @@ export function folderPath(parentId: string, folderMap: Map<string, FolderEntry>
   return parts.join(' / ');
 }
 
+/**
+ * Filter to non-folder documents, sort newest-first, optionally restrict by folder name substring.
+ * Single source of truth for both USB and SSH list/pull paths.
+ */
+export function filterAndSortDocs(
+  docs: UnifiedDoc[],
+  folder: string | undefined,
+): { docs: UnifiedDoc[]; folderMap: Map<string, FolderEntry> } {
+  const folderMap = buildFolderMap(docs);
+  let result = docs.filter((d) => !d.isFolder).sort((a, b) => b.modifiedMs - a.modifiedMs);
+  if (folder) {
+    const f = folder.toLowerCase();
+    result = result.filter((d) => folderPath(d.parent, folderMap).toLowerCase().includes(f));
+  }
+  return { docs: result, folderMap };
+}
+
+/** Find the first document whose name contains the given substring (case-insensitive). */
+export function findByName(docs: UnifiedDoc[], name: string | undefined): UnifiedDoc | undefined {
+  if (!name) return docs[0];
+  const term = name.toLowerCase();
+  return docs.find((d) => d.name.toLowerCase().includes(term));
+}
+
 async function fetchFolder(host: string, folderId: string, timeoutMs: number): Promise<RmApiDocument[]> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -58,8 +102,9 @@ async function fetchFolder(host: string, folderId: string, timeoutMs: number): P
     if (!response.ok) return [];
     const items = (await response.json()) as RmApiDocument[];
     return Array.isArray(items) ? items : [];
-  } catch {
+  } catch (err) {
     clearTimeout(timer);
+    debug('fetchFolder failed for %s: %s', folderId || '<root>', (err as Error).message);
     return [];
   }
 }
@@ -77,7 +122,8 @@ export async function probeUsbHttp(host = USB_IP, timeoutMs = USB_HTTP_TIMEOUT_M
     if (!response.ok) return { available: false, documents: [] };
     const documents = (await response.json()) as RmApiDocument[];
     return { available: true, documents: Array.isArray(documents) ? documents : [] };
-  } catch {
+  } catch (err) {
+    debug('probeUsbHttp failed: %s', (err as Error).message);
     return { available: false, documents: [] };
   }
 }
@@ -106,25 +152,17 @@ export async function fetchAllDocuments(host = USB_IP, perFolderTimeoutMs = 5000
 /**
  * Select a document from the HTTP document list.
  * Filters to DocumentType only. Returns undefined if no match.
+ * (Wrapper around the unified helpers, kept for compatibility.)
  */
 export function selectDocument(
   documents: RmApiDocument[],
   name: string | undefined,
   folder: string | undefined = undefined,
 ): RmApiDocument | undefined {
-  const fm = buildFolderMap(documents);
-  let docs = documents
-    .filter((d) => d.Type === 'DocumentType')
-    .sort((a, b) => new Date(b.ModifiedClient).getTime() - new Date(a.ModifiedClient).getTime());
-
-  if (folder) {
-    const ft = folder.toLowerCase();
-    docs = docs.filter((d) => folderPath(d.Parent, fm).toLowerCase().includes(ft));
-  }
-
-  if (!name) return docs[0];
-  const term = name.toLowerCase();
-  return docs.find((d) => docName(d).toLowerCase().includes(term));
+  const unified = documents.map(fromHttpDoc);
+  const { docs } = filterAndSortDocs(unified, folder);
+  const hit = findByName(docs, name);
+  return hit ? documents.find((d) => d.ID === hit.id) : undefined;
 }
 
 /**
@@ -135,8 +173,9 @@ export function selectDocument(
 function rawHttpGet(host: string, path: string, timeoutMs: number): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const socket = createConnection({ host, port: 80 });
-    const timer = setTimeout(() => { socket.destroy(); reject(new Error(`Timeout: GET ${path}`)); }, timeoutMs);
-    const chunks: Buffer[] = [];
+    let settled = false;
+    const finish = (action: () => void) => { if (settled) return; settled = true; clearTimeout(timer); socket.destroy(); action(); };
+    const timer = setTimeout(() => finish(() => reject(new Error(`Timeout: GET ${path}`))), timeoutMs);
     let headersDone = false;
     let contentLength = -1;
     let bodyStart = 0;
@@ -156,20 +195,28 @@ function rawHttpGet(host: string, path: string, timeoutMs: number): Promise<Buff
         const headers = rawBuf.slice(0, sep).toString();
         const statusLine = headers.split('\r\n')[0];
         const code = parseInt(statusLine.split(' ')[1] ?? '0', 10);
-        if (code !== 200) { socket.destroy(); clearTimeout(timer); reject(new Error(`HTTP ${code}: GET ${path}`)); return; }
+        if (code !== 200) { finish(() => reject(new Error(`HTTP ${code}: GET ${path}`))); return; }
         const m = headers.match(/content-length:\s*(\d+)/i);
         if (m) contentLength = parseInt(m[1], 10);
       }
       const body = rawBuf.slice(bodyStart);
       if (contentLength >= 0 && body.length >= contentLength) {
-        socket.destroy();
-        clearTimeout(timer);
-        resolve(body.slice(0, contentLength));
+        finish(() => resolve(body.slice(0, contentLength)));
       }
     });
 
-    socket.on('end', () => { clearTimeout(timer); resolve(rawBuf.slice(bodyStart)); });
-    socket.on('error', (err) => { clearTimeout(timer); reject(err); });
+    socket.on('end', () => {
+      const body = rawBuf.slice(bodyStart);
+      // If we never got a Content-Length the server signalled end-of-body via close (HTTP/1.0 style) — accept.
+      // If we did get one and the body is short, the connection was truncated — reject.
+      if (contentLength >= 0 && body.length < contentLength) {
+        finish(() => reject(new Error(`Truncated: GET ${path} got ${body.length} of ${contentLength} bytes`)));
+      } else {
+        finish(() => resolve(body));
+      }
+    });
+
+    socket.on('error', (err) => finish(() => reject(err)));
   });
 }
 

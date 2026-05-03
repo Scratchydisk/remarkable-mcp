@@ -3,6 +3,7 @@ import { homedir } from 'os';
 import { join } from 'path';
 
 export type OcrProvider = 'native' | 'ollama' | 'local';
+export type RenderFormat = 'png' | 'jpeg';
 
 export interface ConnectionConfig {
   usbHost: string;
@@ -10,6 +11,8 @@ export interface ConnectionConfig {
   port: number;
   username: string;
   privateKeyPath: string;
+  /** sha256 hex fingerprint of the tablet's SSH host key, captured during setup. Verified on every WiFi/SSH connect. */
+  hostKey?: string;
 }
 
 export interface OcrConfig {
@@ -20,9 +23,19 @@ export interface OcrConfig {
   localEngine?: string;
 }
 
+export interface RenderConfigFields {
+  /** Default output width in pixels. 1404 = native rM2; 1024 reduces size ~2× with no legibility loss. */
+  width: number;
+  /** Default output format. PNG preserves linework; JPEG is much smaller for OCR pulls. */
+  format: RenderFormat;
+  /** JPEG quality 1-100. Ignored when format is png. */
+  jpegQuality: number;
+}
+
 export interface Config {
   connection: ConnectionConfig;
   ocr: OcrConfig;
+  render: RenderConfigFields;
 }
 
 export const CONFIG_DIR = join(homedir(), '.config', 'remarkable-mcp');
@@ -41,6 +54,11 @@ export function buildDefaultConfig(configDir: string): Config {
       provider: 'native',
       localEngine: 'tesseract',
     },
+    render: {
+      width: 1024,
+      format: 'png',
+      jpegQuality: 80,
+    },
   };
 }
 
@@ -52,6 +70,7 @@ export async function readConfig(): Promise<Config> {
     return {
       connection: { ...defaults.connection, ...parsed.connection },
       ocr: { ...defaults.ocr, ...parsed.ocr },
+      render: { ...defaults.render, ...parsed.render },
     };
   } catch {
     return buildDefaultConfig(CONFIG_DIR);

@@ -16,7 +16,35 @@ vi.mock('fs/promises', async (importOriginal) => {
   return { ...actual, readFile: vi.fn(), mkdir: vi.fn() };
 });
 
-import { buildConnectOptions } from '../src/ssh.js';
+import { buildConnectOptions, categoriseSshError, HostKeyMismatchError } from '../src/ssh.js';
+
+describe('categoriseSshError', () => {
+  it('flags timeout', () => {
+    expect(categoriseSshError(new Error('connect ETIMEDOUT 192.168.1.50:22'))).toContain('timeout');
+  });
+
+  it('flags connection refused', () => {
+    expect(categoriseSshError(new Error('connect ECONNREFUSED'))).toContain('refused');
+  });
+
+  it('flags host unreachable', () => {
+    expect(categoriseSshError(new Error('connect EHOSTUNREACH'))).toContain('unreachable');
+  });
+
+  it('flags auth failure as missing key', () => {
+    expect(categoriseSshError(new Error('All configured authentication methods failed'))).toContain('SSH key not deployed');
+  });
+
+  it('returns the HostKeyMismatch message verbatim', () => {
+    const err = new HostKeyMismatchError('a'.repeat(64), 'b'.repeat(64), '192.168.1.50');
+    expect(categoriseSshError(err)).toContain('Host-key mismatch');
+    expect(categoriseSshError(err)).toContain('reflashed');
+  });
+
+  it('passes unknown errors through', () => {
+    expect(categoriseSshError(new Error('something weird'))).toBe('something weird');
+  });
+});
 
 describe('ssh', () => {
   it('sets host, port, username', async () => {
