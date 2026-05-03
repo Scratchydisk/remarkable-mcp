@@ -58,6 +58,26 @@ export const IndexArgs = z.object({
   force: z.boolean().optional(),
 });
 
+export const SaveTranscriptionArgs = z.object({
+  /** Tablet document UUID (preferred — exact). Found in the meta.json cache or returned by remarkable_pull's footer. */
+  doc_id: z.string().optional(),
+  /** Document name substring (case-insensitive); resolves to the most recently cached match. Use when doc_id isn't to hand. */
+  document: z.string().optional(),
+  /** One entry per transcribed page. Empty-text entries are dropped. */
+  pages: z.array(z.object({
+    pageNum: z.number().int().positive(),
+    text: z.string(),
+  })).min(1, 'pages must contain at least one entry'),
+}).superRefine((val, ctx) => {
+  if (!val.doc_id && !val.document) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['doc_id'],
+      message: 'Provide either doc_id or document to identify which cached document the transcription belongs to.',
+    });
+  }
+});
+
 export type PullArgsT = z.infer<typeof PullArgs>;
 export type ListArgsT = z.infer<typeof ListArgs>;
 export type SetupArgsT = z.infer<typeof SetupArgs>;

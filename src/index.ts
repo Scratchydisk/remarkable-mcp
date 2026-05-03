@@ -11,6 +11,7 @@ import { PULL_TOOL, handlePull } from './tools/pull.js';
 import { STATUS_TOOL, handleStatus } from './tools/status.js';
 import { SEARCH_TOOL, handleSearch } from './tools/search.js';
 import { INDEX_TOOL, handleBulkIndex } from './tools/bulk-index.js';
+import { SAVE_TRANSCRIPTION_TOOL, handleSaveTranscription } from './tools/save-transcription.js';
 import { setClientName } from './client.js';
 
 const pkgPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json');
@@ -22,7 +23,7 @@ const server = new Server(
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [SETUP_TOOL, LIST_TOOL, PULL_TOOL, STATUS_TOOL, SEARCH_TOOL, INDEX_TOOL],
+  tools: [SETUP_TOOL, LIST_TOOL, PULL_TOOL, STATUS_TOOL, SEARCH_TOOL, INDEX_TOOL, SAVE_TRANSCRIPTION_TOOL],
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -37,6 +38,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     case 'remarkable_status': return handleStatus(a);
     case 'remarkable_search': return handleSearch(a);
     case 'remarkable_index':  return handleBulkIndex(a);
+    case 'remarkable_save_transcription': return handleSaveTranscription(a);
     default: throw new Error(`Unknown tool: ${name}`);
   }
 });

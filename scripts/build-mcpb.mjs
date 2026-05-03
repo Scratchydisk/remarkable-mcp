@@ -151,6 +151,7 @@ const manifest = {
     { name: 'remarkable_status', description: 'Report connectivity (USB, WiFi, mDNS), firmware version, host-key pinning state, and configuration paths with categorised error reasons.' },
     { name: 'remarkable_search', description: 'Full-text search across the OCR\'d contents of cached documents. Ranked, fuzzy + prefix matching, returns page-level hits with snippets.' },
     { name: 'remarkable_index',  description: 'Bulk-OCR every document on the tablet and add it to the search corpus. Requires ocr.provider="ollama" or "local" in config.' },
+    { name: 'remarkable_save_transcription', description: 'Save text the agent transcribed from a previous remarkable_pull into the cache and search index. Bridges native OCR mode (host LLM reads images) into the search corpus.' },
   ],
   compatibility: {
     claude_desktop: '>=0.10.0',

@@ -130,7 +130,7 @@ async function main() {
 
   // ── tools/list ──
   const tools = handshake.get(2)?.result?.tools ?? [];
-  const expectedNames = ['remarkable_setup', 'remarkable_list', 'remarkable_pull', 'remarkable_status', 'remarkable_search', 'remarkable_index'];
+  const expectedNames = ['remarkable_setup', 'remarkable_list', 'remarkable_pull', 'remarkable_status', 'remarkable_search', 'remarkable_index', 'remarkable_save_transcription'];
   for (const name of expectedNames) {
     const tool = tools.find((t) => t.name === name);
     assert(!!tool, `tools/list: ${name} present`);

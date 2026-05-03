@@ -136,11 +136,29 @@ Full-text search across the OCR'd contents of documents you've previously pulled
 | `limit`   | number? | Maximum hits to return (default 20, max 100).                                          |
 | `folder`  | string? | Restrict to documents whose folder path contains this substring.                       |
 
-**Search requires OCR text.** `ocr.provider` must be `"ollama"` or `"local"` in `~/.config/remarkable-mcp/config.json` — `"native"` (the default) means the host LLM reads images directly and produces no searchable text. Documents are added to the corpus opportunistically every time you pull them; ranking favours doc-name and folder matches over body text.
+**Three ways to populate the search corpus.** Pick whichever matches your setup:
+
+1. **Set `ocr.provider` to `"ollama"` or `"local"`** in `~/.config/remarkable-mcp/config.json` — every `remarkable_pull` then caches per-page text automatically.
+2. **Stay on native OCR mode** (the default; the host LLM reads images directly) and call `remarkable_save_transcription` after each pull to feed the transcription back into the cache. The agent can do this in the same turn it produces the transcription.
+3. **`remarkable_index`** — bulk-OCRs everything in one shot (ollama / local providers only).
+
+Ranking favours doc-name and folder matches over body text.
 
 ### `remarkable_index`
 
 Bulk-OCRs every document on the tablet (or a folder subset) and adds it to the search corpus. Long-running on large libraries; documents already cached and indexed for their current mtime are skipped unless `force: true`. Requires `ocr.provider` set to `"ollama"` or `"local"`. Run this once for a full library sweep, then let normal pulls keep the corpus current.
+
+### `remarkable_save_transcription`
+
+Bridges native-OCR-mode pulls into the search index. The host LLM reads the page images and produces a transcription in its response; this tool gives the agent a place to put that text back so it survives the conversation.
+
+| Parameter   | Type    | Description                                                                                                                  |
+|-------------|---------|------------------------------------------------------------------------------------------------------------------------------|
+| `doc_id`    | string? | Tablet document UUID (preferred — exact). Included in the `remarkable_pull` response footer when running in native OCR mode. |
+| `document`  | string? | Document name substring (case-insensitive). Resolves to the most recently cached match. Use when `doc_id` isn't to hand.     |
+| `pages`     | array   | One entry per transcribed page: `{ pageNum, text }`. Empty-text entries are dropped.                                         |
+
+Either `doc_id` or `document` must be provided. The text is appended to whatever the cache already has for that document; calling it twice with overlapping pages overwrites the previous entries. After saving, the document is immediately findable via `remarkable_search`.
 
 ## OCR modes
 

@@ -373,6 +373,19 @@ export async function handlePull(args: Record<string, unknown>): Promise<CallToo
       content.push({ type: 'text', text: `Saved:\n${savedPaths.join('\n')}` });
     }
 
+    // In native OCR mode the host LLM reads the images directly and the server has no way to
+    // capture the resulting text. Tell the agent how to feed it back into the search index so
+    // future remarkable_search calls can find this document.
+    if (config.ocr.provider === 'native' && rendered.length > 0 && inlineMode) {
+      content.push({
+        type: 'text',
+        text:
+          `To make this document searchable, after transcribing the page images call ` +
+          `remarkable_save_transcription with doc_id="${target.id}" and ` +
+          `pages=[{pageNum, text}, …]. Skip if the pages had no meaningful text.`,
+      });
+    }
+
     return { content };
   } finally {
     await rm(tempDir, { recursive: true, force: true });

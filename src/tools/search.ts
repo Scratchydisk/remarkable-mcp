@@ -40,9 +40,11 @@ export async function handleSearch(args: Record<string, unknown>): Promise<CallT
       content: [{
         type: 'text',
         text:
-          'Search index is empty — no documents have been OCR\'d yet.\n' +
-          'Pull at least one document with an OCR provider configured (set ocr.provider to "ollama" or "local" ' +
-          'in ~/.config/remarkable-mcp/config.json), or run remarkable_index to bulk-index everything on the tablet.',
+          'Search index is empty — no documents have been transcribed yet.\n' +
+          'Three ways to populate it:\n' +
+          ' • Pull a document with ocr.provider="ollama" or "local" in ~/.config/remarkable-mcp/config.json (text is cached automatically).\n' +
+          ' • Pull a document in native OCR mode and call remarkable_save_transcription with the transcribed pages.\n' +
+          ' • Run remarkable_index to bulk-OCR everything on the tablet (ollama/local mode only).',
       }],
     };
   }
