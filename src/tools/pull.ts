@@ -22,7 +22,7 @@ export const PULL_TOOL: Tool = {
     type: 'object',
     properties: {
       document: { type: 'string', description: 'Document name substring. Defaults to most recently modified.' },
-      page:     { type: 'number', description: 'Specific page number (1-based). Defaults to all pages.' },
+      page:     { type: 'string', description: 'Page(s) to return: a single number ("3") or inclusive range ("1-4"). Defaults to all pages.' },
       prompt:   { type: 'string', description: 'Custom transcription instruction (native mode: returned as agent context).' },
     },
   },
@@ -134,18 +134,31 @@ export async function handlePull(args: Record<string, unknown>): Promise<CallToo
       pageIds = await readPageIds(docDir, targetId);
     }
 
-    // ── Render ─────────────────────────────────────────────────────────────
-    const allPages = await renderPages(docDir, targetId, pageIds, tempDir, thumbDir);
-
-    if (allPages.length === 0) {
-      return { isError: true, content: [{ type: 'text', text: `No renderable pages for "${targetName}". Open the document on the tablet at least once.` }] };
+    // ── Page range parsing ─────────────────────────────────────────────────
+    const pageArg = args.page as string | undefined;
+    let pageNums: Set<number> | undefined;
+    if (pageArg) {
+      const rangeMatch = pageArg.match(/^(\d+)-(\d+)$/);
+      const singleMatch = pageArg.match(/^(\d+)$/);
+      if (rangeMatch) {
+        const from = parseInt(rangeMatch[1], 10);
+        const to = parseInt(rangeMatch[2], 10);
+        pageNums = new Set(Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => from + i));
+      } else if (singleMatch) {
+        pageNums = new Set([parseInt(singleMatch[1], 10)]);
+      } else {
+        return { isError: true, content: [{ type: 'text', text: `Invalid page argument "${pageArg}". Use a number ("3") or range ("1-4").` }] };
+      }
     }
 
-    const pageArg = args.page as number | undefined;
-    const pagesToProcess = pageArg ? allPages.filter((p) => p.pageNum === pageArg) : allPages;
+    // ── Render ─────────────────────────────────────────────────────────────
+    const pagesToProcess = await renderPages(docDir, targetId, pageIds, tempDir, thumbDir, pageNums);
 
-    if (pageArg && pagesToProcess.length === 0) {
-      return { isError: true, content: [{ type: 'text', text: `Page ${pageArg} not found. Document has ${allPages.length} page(s).` }] };
+    if (pagesToProcess.length === 0) {
+      if (pageNums) {
+        return { isError: true, content: [{ type: 'text', text: `Page(s) "${pageArg}" not found or not renderable. Document has ${pageIds.length} page(s).` }] };
+      }
+      return { isError: true, content: [{ type: 'text', text: `No renderable pages for "${targetName}". Open the document on the tablet at least once.` }] };
     }
 
     // ── OCR + assemble ─────────────────────────────────────────────────────

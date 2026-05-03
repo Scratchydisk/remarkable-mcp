@@ -54,6 +54,7 @@ export async function renderPages(
   pageIds: string[],
   tempDir: string,
   thumbDir?: string,
+  pageNums?: Set<number>,
 ): Promise<ExportedPage[]> {
   // The rmdoc ZIP may extract to a flat layout or a subdirectory.
   // Try both: docDir/{pageId}.rm and docDir/{docId}/{pageId}.rm
@@ -62,12 +63,14 @@ export async function renderPages(
 
   if (pageIds.length > 0) {
     for (let i = 0; i < pageIds.length; i++) {
-      const pngPath = join(tempDir, `page-${i + 1}.png`);
+      const num = i + 1;
+      if (pageNums && !pageNums.has(num)) continue;
+      const pngPath = join(tempDir, `page-${num}.png`);
       const flatRm = join(docDir, `${pageIds[i]}.rm`);
       const subRm = join(subDir, `${pageIds[i]}.rm`);
 
       const ok = await renderRmFile(flatRm, pngPath) || await renderRmFile(subRm, pngPath);
-      if (ok) pages.push({ pageNum: i + 1, localPath: pngPath, format: 'png' });
+      if (ok) pages.push({ pageNum: num, localPath: pngPath, format: 'png' });
     }
   }
 
