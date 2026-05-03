@@ -1,4 +1,5 @@
 import AdmZip from 'adm-zip';
+import { createConnection } from 'net';
 
 export const USB_IP = '10.11.99.1';
 export const USB_HTTP_TIMEOUT_MS = 2000;
@@ -54,16 +55,57 @@ export function selectDocument(documents: RmApiDocument[], name: string | undefi
 }
 
 /**
+ * Raw TCP HTTP GET that tolerates the reMarkable firmware bug where the
+ * server sends both Content-Length and Transfer-Encoding: chunked.
+ * Node's http module and fetch both reject this as invalid HTTP/1.1.
+ */
+function rawHttpGet(host: string, path: string, timeoutMs: number): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const socket = createConnection({ host, port: 80 });
+    const timer = setTimeout(() => { socket.destroy(); reject(new Error(`Timeout: GET ${path}`)); }, timeoutMs);
+    const chunks: Buffer[] = [];
+    let headersDone = false;
+    let contentLength = -1;
+    let bodyStart = 0;
+    let rawBuf = Buffer.alloc(0);
+
+    socket.on('connect', () => {
+      socket.write(`GET ${path} HTTP/1.0\r\nHost: ${host}\r\nConnection: close\r\n\r\n`);
+    });
+
+    socket.on('data', (chunk: Buffer) => {
+      rawBuf = Buffer.concat([rawBuf, chunk]);
+      if (!headersDone) {
+        const sep = rawBuf.indexOf('\r\n\r\n');
+        if (sep === -1) return;
+        headersDone = true;
+        bodyStart = sep + 4;
+        const headers = rawBuf.slice(0, sep).toString();
+        const statusLine = headers.split('\r\n')[0];
+        const code = parseInt(statusLine.split(' ')[1] ?? '0', 10);
+        if (code !== 200) { socket.destroy(); clearTimeout(timer); reject(new Error(`HTTP ${code}: GET ${path}`)); return; }
+        const m = headers.match(/content-length:\s*(\d+)/i);
+        if (m) contentLength = parseInt(m[1], 10);
+      }
+      const body = rawBuf.slice(bodyStart);
+      if (contentLength >= 0 && body.length >= contentLength) {
+        socket.destroy();
+        clearTimeout(timer);
+        resolve(body.slice(0, contentLength));
+      }
+    });
+
+    socket.on('end', () => { clearTimeout(timer); resolve(rawBuf.slice(bodyStart)); });
+    socket.on('error', (err) => { clearTimeout(timer); reject(err); });
+  });
+}
+
+/**
  * Download a document as an rmdoc archive (ZIP of .rm files).
  * Requires firmware 3.9+.
  */
 export async function downloadRmdoc(docId: string, host = USB_IP): Promise<Buffer> {
-  const response = await fetch(`http://${host}/download/${docId}/rmdoc`, {
-    signal: AbortSignal.timeout(120000),
-  });
-  if (!response.ok) throw new Error(`rmdoc download failed: ${response.status} ${response.statusText}`);
-  const arrayBuffer = await response.arrayBuffer();
-  return Buffer.from(arrayBuffer);
+  return rawHttpGet(host, `/download/${docId}/rmdoc`, 120000);
 }
 
 /**
@@ -71,11 +113,7 @@ export async function downloadRmdoc(docId: string, host = USB_IP): Promise<Buffe
  * Used as a last-resort fallback when rmdoc rendering fails.
  */
 export async function downloadThumbnail(docId: string, host = USB_IP): Promise<Buffer> {
-  const response = await fetch(`http://${host}/thumbnail/${docId}`, {
-    signal: AbortSignal.timeout(15000),
-  });
-  if (!response.ok) throw new Error(`Thumbnail download failed: ${response.status}`);
-  return Buffer.from(await response.arrayBuffer());
+  return rawHttpGet(host, `/thumbnail/${docId}`, 15000);
 }
 
 /**
