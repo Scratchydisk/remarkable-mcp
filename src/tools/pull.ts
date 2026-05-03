@@ -22,8 +22,9 @@ export const PULL_TOOL: Tool = {
     type: 'object',
     properties: {
       document: { type: 'string', description: 'Document name substring. Defaults to most recently modified.' },
-      page:     { type: 'string', description: 'Page(s) to return: a single number ("3") or inclusive range ("1-4"). Defaults to all pages.' },
-      prompt:   { type: 'string', description: 'Custom transcription instruction (native mode: returned as agent context).' },
+      page:       { type: 'string', description: 'Page(s) to return: a single number ("3") or inclusive range ("1-4"). Defaults to all pages.' },
+      output_dir: { type: 'string', description: 'Directory to save rendered page PNGs. If omitted, images are only returned inline.' },
+      prompt:     { type: 'string', description: 'Custom transcription instruction (native mode: returned as agent context).' },
     },
   },
 };
@@ -163,17 +164,35 @@ export async function handlePull(args: Record<string, unknown>): Promise<CallToo
 
     // ── OCR + assemble ─────────────────────────────────────────────────────
     const prompt = args.prompt as string | undefined;
+    const outputDir = args.output_dir as string | undefined;
     const content: CallToolResult['content'] = [];
 
     const header = [`Document: ${targetName} — ${pagesToProcess.length} page(s).`];
     if (config.ocr.provider === 'native' && prompt) header.push(`Transcription instruction: ${prompt}`);
+    if (outputDir) header.push(`Saving pages to: ${outputDir}`);
     content.push({ type: 'text', text: header.join('\n') });
 
+    if (outputDir) {
+      await mkdir(outputDir, { recursive: true });
+    }
+
+    const savedPaths: string[] = [];
     for (const page of pagesToProcess) {
       const result = await processPage(page, config.ocr, prompt);
       if (pagesToProcess.length > 1) content.push({ type: 'text', text: `--- Page ${result.pageNum} ---` });
       if (result.text) content.push({ type: 'text', text: result.text });
       content.push({ type: 'image', data: result.imageBase64, mimeType: 'image/png' });
+
+      if (outputDir) {
+        const safeName = targetName.replace(/[^a-zA-Z0-9_\- ]/g, '_');
+        const dest = join(outputDir, `${safeName}-page${result.pageNum}.png`);
+        await writeFile(dest, Buffer.from(result.imageBase64, 'base64'));
+        savedPaths.push(dest);
+      }
+    }
+
+    if (savedPaths.length > 0) {
+      content.push({ type: 'text', text: `Saved:\n${savedPaths.join('\n')}` });
     }
 
     return { content };
