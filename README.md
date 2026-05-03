@@ -272,6 +272,14 @@ Anthropic's review process expects test credentials, but this server talks to ph
 - **Static-test path**: reviewers can install the `.mcpb` and run `remarkable_status` with no tablet connected; it returns a clean diagnostic ("USB HTTP not reachable; WiFi SSH no host configured") instead of crashing or returning a generic error. This exercises the schema, the manifest, and the error-message standard without hardware.
 - **Source code** is public on GitHub (MIT) — reviewers can audit the SSH/USB code paths directly.
 
+## Built on
+
+- [**remarkable-rm**](https://github.com/Scratchydisk/remarkable-rm) — parses reMarkable v6 `.rm` binary files and renders them to SVG / PNG / JPEG. Maintained by the same author; rendering bugs (mis-strokes, missing colours, wrong line widths) belong on that repo.
+- [**MiniSearch**](https://github.com/lucaong/minisearch) — the pure-JS BM25 index powering `remarkable_search`.
+- [**ssh2**](https://github.com/mscdex/ssh2) — the WiFi SSH transport.
+- [**sharp**](https://github.com/lovell/sharp) — JPEG encoding for smaller payloads.
+- [**Model Context Protocol SDK**](https://github.com/modelcontextprotocol/typescript-sdk) — stdio MCP server boilerplate.
+
 ## Licence
 
 MIT

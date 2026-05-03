@@ -115,7 +115,8 @@ const manifest = {
     'an SSH key, enables the USB web interface, pins the host-key fingerprint) or refresh (no password — just ' +
     'rediscovers the current WiFi IP using the existing key). Documents are cached by mtime so repeat pulls are ' +
     'instant. Pages on a still-open document that the tablet hasn\'t flushed to disk are reported in the response. ' +
-    'Renders PNG or JPEG at a configurable width, with client-aware response sizing for Claude Desktop\'s ~1 MB ' +
+    'Renders PNG or JPEG via remarkable-rm (https://github.com/Scratchydisk/remarkable-rm) at a configurable ' +
+    'width, with client-aware response sizing for Claude Desktop\'s ~1 MB ' +
     'tool-response cap. OCR via the host LLM (default), local Ollama, or Tesseract. Documents pulled in ollama ' +
     'or local OCR mode are added to a persistent BM25 search index (powered by MiniSearch) so you can ask ' +
     '"find my notes about X" across your whole library; remarkable_index bulk-OCRs everything in one shot. ' +
