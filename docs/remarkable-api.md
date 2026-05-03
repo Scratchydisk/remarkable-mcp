@@ -162,4 +162,6 @@ Binary stroke format used by the reMarkable rendering engine. Two versions in ac
 | v5 | Pre-3.x | Older format |
 | v6 | 3.x+ | Current format |
 
-Parse and render with [remarkable-rm](https://github.com/you/remarkable-rm) (TypeScript) or [rmscene](https://github.com/ricklupton/rmscene) (Python, MIT, by Rick Lupton).
+Parse and render with [remarkable-rm](https://github.com/Scratchydisk/remarkable-rm) (TypeScript) or [rmscene](https://github.com/ricklupton/rmscene) (Python, MIT, by Rick Lupton).
+
+remarkable-rm has a detailed description of the [v5 and v6 formats](https://github.com/Scratchydisk/remarkable-rm/blob/main/docs/rm-v6-format.md) culled from existing open source documents and original findings.
