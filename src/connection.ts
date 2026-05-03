@@ -22,6 +22,32 @@ export function docName(doc: RmApiDocument): string {
   return (doc.VissibleName ?? '').trim();
 }
 
+export interface FolderEntry { name: string; parent: string; }
+
+/** Build a map of folder UUID → { name, parent } from a flat documents list. */
+export function buildFolderMap(documents: RmApiDocument[]): Map<string, FolderEntry> {
+  const map = new Map<string, FolderEntry>();
+  for (const d of documents) {
+    if (d.Type === 'CollectionType') map.set(d.ID, { name: docName(d), parent: d.Parent });
+  }
+  return map;
+}
+
+/** Resolve the full folder path for a document (e.g. "Work / Meeting Notes"). */
+export function folderPath(parentId: string, folderMap: Map<string, FolderEntry>): string {
+  const parts: string[] = [];
+  let id = parentId;
+  const visited = new Set<string>();
+  while (id && !visited.has(id)) {
+    visited.add(id);
+    const entry = folderMap.get(id);
+    if (!entry) break;
+    parts.unshift(entry.name);
+    id = entry.parent;
+  }
+  return parts.join(' / ');
+}
+
 /**
  * Probe the USB web interface by fetching /documents/.
  * Returns available:false on any error or timeout.

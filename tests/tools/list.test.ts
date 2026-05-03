@@ -1,13 +1,16 @@
 import { describe, it, expect, vi } from 'vitest';
 
-vi.mock('../../src/connection.js', () => ({
-  probeUsbHttp: vi.fn().mockResolvedValue({ available: true, documents: [
-    { ID: 'a1', VissibleName: 'My Notes', Type: 'DocumentType', ModifiedClient: '2026-04-12T10:00:00Z', Parent: '' },
-  ]}),
-  selectDocument: vi.fn(),
-  docName: vi.fn((d: { VissibleName: string }) => d.VissibleName),
-  USB_IP: '10.11.99.1',
-}));
+vi.mock('../../src/connection.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/connection.js')>();
+  return {
+    ...actual,
+    probeUsbHttp: vi.fn().mockResolvedValue({ available: true, documents: [
+      { ID: 'a1', VissibleName: 'My Notes', Type: 'DocumentType', ModifiedClient: '2026-04-12T10:00:00Z', Parent: '' },
+    ]}),
+    selectDocument: vi.fn(),
+    docName: vi.fn((d: { VissibleName: string }) => d.VissibleName),
+  };
+});
 
 vi.mock('../../src/ssh.js', () => ({ sshExec: vi.fn() }));
 
